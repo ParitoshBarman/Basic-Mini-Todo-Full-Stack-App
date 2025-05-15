@@ -18,7 +18,7 @@ root/
 ## 🌐 Live Demo
 
 - 🔗 Frontend: [https://basic-mini-todo-full-stack-app.netlify.app](https://basic-mini-todo-full-stack-app.netlify.app)
-- 🔗 Backend: [https://basic-mini-todo-full-stack-app.onrender.com/](https://basic-mini-todo-full-stack-app.onrender.com/api)
+- 🔗 Backend: [https://basic-mini-todo-full-stack-app.onrender.com/api](https://basic-mini-todo-full-stack-app.onrender.com/)
 - 🔐 Test Credentials: `email: pari1@gmail.com` & `password: 123`
 - 📌 Todo Actions Page: [https://basic-mini-todo-full-stack-app.netlify.app/todos](https://basic-mini-todo-full-stack-app.netlify.app/todos)
 
