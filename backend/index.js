@@ -13,6 +13,9 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/todos", todoRoutes);
 
+app.get("/", (req, res)=>{
+    res.send("Server is running");
+})
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
