@@ -1,178 +1,217 @@
-// === BACKEND (Node.js + Express + MongoDB) ===
-// Using MVC pattern
+# Todo App Backend
 
-// ====== index.js ======
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
-require("dotenv").config();
+This is the **backend** of a simple Todo App built using **Node.js**, **Express**, and **MongoDB** with **JWT-based Authentication**.
 
-const authRoutes = require("./routes/authRoutes");
-const todoRoutes = require("./routes/todoRoutes");
+## 🚀 Features
 
-const app = express();
-const PORT = process.env.PORT || 8080;
+- User Signup & Login with encrypted passwords (bcrypt)
+- JWT Authentication
+- CRUD operations for Todos
+- Protected Todo Routes
+- MongoDB for persistent storage
+- Modular folder structure
 
-app.use(cors());
-app.use(express.json());
+## 🗂 Folder Structure
 
-app.use("/api/auth", authRoutes);
-app.use("/api/todos", todoRoutes);
+```
+backend/
+│
+├── config/             # Database connection
+│   └── db.js
+│
+├── controllers/        # Logic for auth and todos
+│   ├── authController.js
+│   └── todoController.js
+│
+├── middleware/         # JWT verification middleware
+│   └── authMiddleware.js
+│
+├── models/             # Mongoose schemas
+│   ├── User.js
+│   └── Todo.js
+│
+├── routes/             # API routes
+│   ├── authRoutes.js
+│   └── todoRoutes.js
+│
+├── .env                # Environment variables
+├── .gitignore
+├── index.js            # Entry point
+├── package.json
+└── README.md
+```
 
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log("MongoDB connected");
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  })
-  .catch((err) => console.error("MongoDB connection error:", err));
+## 🔐 Environment Variables
 
+Create a `.env` file in the root and add:
 
-// ====== models/User.js ======
-const mongoose = require("mongoose");
+```
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET_KEY=your_secret_key
+PORT=3000
+```
 
-const userSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-});
+## 🛠 Installation
 
-module.exports = mongoose.model("User", userSchema);
+1. Clone the repo
+2. Install dependencies
+```bash
+npm install
+```
+3. Run the server
+```bash
+node index.js
+```
 
+## 🧪 API Endpoints
 
-// ====== models/Todo.js ======
-const mongoose = require("mongoose");
+### Auth
+- `POST /api/auth/signup` – Signup with email and password
+- `POST /api/auth/login` – Login and receive JWT
 
-const todoSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  completed: { type: Boolean, default: false },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-});
+### Todos (Require JWT in `Authorization: Bearer <token>`)
+- `GET /api/todos` – Fetch todos
+- `POST /api/todos` – Add a todo `{ title: "My Todo" }`
+- `PATCH /api/todos/:id` – Update a todo
+- `DELETE /api/todos/:id` – Delete a todo
 
-module.exports = mongoose.model("Todo", todoSchema);
+---
 
+## 🔐 Authentication Routes
 
-// ====== routes/authRoutes.js ======
-const express = require("express");
-const router = express.Router();
-const { signup, login } = require("../controllers/authController");
+### POST `/api/auth/signup`
+Create a new user account.
 
-router.post("/signup", signup);
-router.post("/login", login);
+**Request Body:**
+```json
+{
+  "email": "testuser@example.com",
+  "password": "password123"
+}
+```
 
-module.exports = router;
+**Response:**
+```json
+{
+  "message": "Signup successful"
+}
+```
 
+---
 
-// ====== routes/todoRoutes.js ======
-const express = require("express");
-const router = express.Router();
-const auth = require("../middleware/authMiddleware");
-const {
-  getTodos,
-  addTodo,
-  updateTodo,
-  deleteTodo,
-} = require("../controllers/todoController");
+### POST `/api/auth/login`
+Login with existing user credentials.
 
-router.use(auth);
-router.get("/", getTodos);
-router.post("/", addTodo);
-router.patch("/:id", updateTodo);
-router.delete("/:id", deleteTodo);
+**Request Body:**
+```json
+{
+  "email": "testuser@example.com",
+  "password": "password123"
+}
+```
 
-module.exports = router;
+**Response:**
+```json
+{
+  "token": "your_jwt_token"
+}
+```
 
+---
 
-// ====== controllers/authController.js ======
-const User = require("../models/User");
-const jwt = require("jsonwebtoken");
+## ✅ Todo Routes (Protected)
 
-const signup = async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    const userExists = await User.findOne();
-    if (userExists) {
-      return res.status(400).json({ message: "Only one account allowed." });
-    }
-    const newUser = new User({ email, password });
-    await newUser.save();
-    res.status(201).json({ message: "Signup successful" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+🔐 All routes below require an `Authorization` header:
+```
+Authorization: Bearer <your_token>
+```
+
+---
+
+### GET `/api/todos`
+Get all todos for the authenticated user.
+
+**Response:**
+```json
+[
+  {
+    "_id": "id",
+    "title": "Buy groceries",
+    "completed": false,
+    "userId": "user_id"
   }
-};
+]
+```
 
-const login = async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    const user = await User.findOne({ email, password });
-    if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
-    res.json({ token });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+---
 
-module.exports = { signup, login };
+### POST `/api/todos`
+Create a new todo item.
+
+**Request Body:**
+```json
+{
+  "title": "Finish homework"
+}
+```
+
+**Response:**
+```json
+{
+  "_id": "id",
+  "title": "Finish homework",
+  "completed": false,
+  "userId": "user_id"
+}
+```
+
+---
+
+### PATCH `/api/todos/:id`
+Update a todo item.
+
+**Request Body:**
+```json
+{
+  "title": "Update title",
+  "completed": true
+}
+```
+
+**Response:**
+```json
+{
+  "_id": "id",
+  "title": "Update title",
+  "completed": true,
+  "userId": "user_id"
+}
+```
+
+---
+
+### DELETE `/api/todos/:id`
+Delete a todo item.
+
+**Response:**
+```json
+{
+  "message": "Deleted"
+}
+```
+
+---
+
+## 🧠 Tech Stack
+
+- Node.js
+- Express.js
+- MongoDB with Mongoose
+- JSON Web Token (JWT)
+- Bcrypt for password hashing
+- CORS for cross-origin requests
 
 
-// ====== controllers/todoController.js ======
-const Todo = require("../models/Todo");
+## 🧑‍💻 Author
 
-const getTodos = async (req, res) => {
-  const todos = await Todo.find({ userId: req.userId });
-  res.json(todos);
-};
-
-const addTodo = async (req, res) => {
-  const { title } = req.body;
-  const newTodo = new Todo({ title, userId: req.userId });
-  await newTodo.save();
-  res.status(201).json(newTodo);
-};
-
-const updateTodo = async (req, res) => {
-  const updated = await Todo.findOneAndUpdate(
-    { _id: req.params.id, userId: req.userId },
-    req.body,
-    { new: true }
-  );
-  if (!updated) return res.status(404).json({ message: "Todo not found" });
-  res.json(updated);
-};
-
-const deleteTodo = async (req, res) => {
-  await Todo.deleteOne({ _id: req.params.id, userId: req.userId });
-  res.json({ message: "Deleted" });
-};
-
-module.exports = { getTodos, addTodo, updateTodo, deleteTodo };
-
-
-// ====== middleware/authMiddleware.js ======
-const jwt = require("jsonwebtoken");
-
-module.exports = function (req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const token = authHeader.split(" ")[1];
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.userId;
-    next();
-  } catch (err) {
-    res.status(401).json({ message: "Invalid token" });
-  }
-};
-
-
-// ====== .env ======
-// MONGO_URI=<your_mongodb_connection_string>
-// JWT_SECRET=supersecretkey
+Made with ❤️ by Paritosh Barman
